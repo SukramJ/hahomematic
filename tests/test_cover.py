@@ -167,6 +167,23 @@ async def test_ceipblind_dr(
     assert cover._e_level.unconfirmed_last_value_send is None
     assert cover._e_level_2.unconfirmed_last_value_send is None
 
+    await cover.set_position(position=81, tilt_position=43)
+    assert mock_client.method_calls[-1] == call.set_value(
+        channel_address="VCU7807849:2",
+        paramset_key="VALUES",
+        parameter="COMBINED_PARAMETER",
+        value="L2=43,L=81",
+        wait_for_callback=WAIT_FOR_CALLBACK,
+    )
+
+    # test unconfirmed values
+    assert cover._e_level.unconfirmed_last_value_send == 0.81
+    assert cover._e_level_2.unconfirmed_last_value_send == 0.43
+    await central.event(const.INTERFACE_ID, "VCU7807849:2", "LEVEL", 0.81)
+    await central.event(const.INTERFACE_ID, "VCU7807849:2", "LEVEL_2", 0.43)
+    assert cover._e_level.unconfirmed_last_value_send is None
+    assert cover._e_level_2.unconfirmed_last_value_send is None
+
     await central.event(const.INTERFACE_ID, "VCU7807849:1", "LEVEL", 0.81)
     await central.event(const.INTERFACE_ID, "VCU7807849:1", "LEVEL_2", _CLOSED_LEVEL)
     assert cover.current_position == 81
